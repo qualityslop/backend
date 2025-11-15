@@ -20,7 +20,7 @@ from qs.server.llm_client import call_llm
 from qs.server.schemas import *
 from qs.server.services import *
 from qs.game.session import Session
-from qs.game.player import Player
+from qs.game.player import Player, HOUSING_QUALITY, LOCATION_TYPE
 from qs.server.dependencies import get_session
 
 
@@ -28,6 +28,7 @@ def get_routes() -> list[ControllerRouterHandler]:
     return [
         SessionController,
         GameController,
+        LifestyleController,
         explain_event,
         explain_text
     ]
@@ -84,7 +85,6 @@ class SessionController(Controller):
     tags = ["Sessions"]
     signature_types = [Session, Player]
 
-
     @post(
         operation_id="SessionCreate",
         path="/create"
@@ -111,7 +111,6 @@ class SessionController(Controller):
 
         return response
 
-
     @post(
         operation_id="SessionJoin",
         path="/{session_id:str}/join",
@@ -132,7 +131,6 @@ class SessionController(Controller):
         set_token_in_response(response, token)
 
         return response
-
 
     @get(
         operation_id="Logout",
@@ -159,7 +157,6 @@ class GameController(Controller):
         session = leader.get_session()
         session.start()
 
-
     @post(
         operation_id="PauseSession",
         path="/pause",
@@ -171,7 +168,6 @@ class GameController(Controller):
         session = leader.get_session()
         session.pause()
 
-
     @post(
         operation_id="StopSession",
         path="/stop",
@@ -182,7 +178,6 @@ class GameController(Controller):
     ) -> None:
         session = leader.get_session()
         session.stop()
-
 
     @get(
         operation_id="Poll",
@@ -255,7 +250,6 @@ class GameController(Controller):
             players=players,
         )
 
-
     @post(
         operation_id="SetTimeProgressionMultiplier",
         path="/set-time-progression-multiplier",
@@ -268,7 +262,6 @@ class GameController(Controller):
         session = leader.get_session()
         session.set_time_progression_multiplier(data)
 
-
     @post(
         operation_id="SetMonthlyGroceryExpense",
         path="/set-monthly-grocery-expense",
@@ -278,8 +271,7 @@ class GameController(Controller):
         player: Player,
         data: float,
     ) -> None:
-        player.set_monthly_grocery_expense(data)
-
+        player.set_monthly_food_budget(data)
 
     @post(
         operation_id="SetMonthlyLeisureExpense",
@@ -292,7 +284,6 @@ class GameController(Controller):
     ) -> None:
         player.set_monthly_leisure_expense(data)
 
-
     @get(
         operation_id="GetStockPrices",
         path="/stock-prices",
@@ -303,7 +294,6 @@ class GameController(Controller):
     ) -> dict[str, dict[date, float]]:
         session = player.get_session()
         return session.get_stock_prices()
-    
 
     @get(
         operation_id="GetDividends",
@@ -315,7 +305,6 @@ class GameController(Controller):
     ) -> dict[str, dict[date, float]]:
         session = player.get_session()
         return session.get_dividends()
-
 
     @post(
         operation_id="BuyStock",
@@ -329,7 +318,6 @@ class GameController(Controller):
     ) -> None:
         player.buy_stock(symbol, data)
 
-    
     @post(
         operation_id="SellStock",
         path="/stock/{symbol:str}/sell",
@@ -342,7 +330,6 @@ class GameController(Controller):
     ) -> None:
         player.sell_stock(symbol, data)
 
-
     @post(
         operation_id="LiquidateStock",
         path="/stock/{symbol:str}/liquidate",
@@ -353,6 +340,114 @@ class GameController(Controller):
         symbol: str,
     ) -> None:
         player.liquidate_stock(symbol)
+
+
+class LifestyleController(Controller):
+    path = "/lifestyle"
+    tags = ["Lifestyle"]
+    signature_types = [Player]
+
+    @get(
+        operation_id="ListAccommodations",
+        path="/accommodations",
+    )
+    async def list_accommodations(
+        self,
+        player: Player,
+    ) -> ListAccommodationsResponse:
+        """List all available accommodation options."""
+        current_details = player.get_accommodation_details()
+
+        accommodations = []
+
+        # Generate accommodation options based on combinations of quality, location, and size
+        sizes = [30, 50, 70, 100]
+
+        for quality in HOUSING_QUALITY:
+            for location in LOCATION_TYPE:
+                for sqm in sizes:
+                    # Calculate rent and utilities
+                    monthly_rent = quality.value["cost"] + \
+                        location.value["cost"]
+                    monthly_utilities = 100 + (sqm * 2)
+
+                    accommodation_id = f"{quality.name.lower()}_{location.name.lower()}_{sqm}"
+
+                    # Create description
+                    quality_desc = {
+                        "LOW": "Basic",
+                        "MEDIUM": "Standard",
+                        "HIGH": "Luxury"
+                    }[quality.name]
+
+                    location_desc = {
+                        "SUBURBS": "Suburban area",
+                        "CITY_CENTER": "City center",
+                        "RURAL": "Rural area"
+                    }[location.name]
+
+                    description = f"{quality_desc} accommodation in {location_desc}, {sqm}m²"
+
+                    accommodations.append(
+                        AccommodationOption(
+                            id=accommodation_id,
+                            name=f"{quality_desc} - {location_desc} ({sqm}m²)",
+                            quality=quality.name,
+                            location=location.name,
+                            sqm=sqm,
+                            monthly_rent=monthly_rent,
+                            monthly_utilities=monthly_utilities,
+                            description=description,
+                        )
+                    )
+
+        return ListAccommodationsResponse(
+            current_accommodation_id=current_details["id"],
+            accommodations=accommodations,
+        )
+
+    @post(
+        operation_id="MoveAccommodation",
+        path="/accommodations/move",
+    )
+    async def move_accommodation(
+        self,
+        player: Player,
+        data: MoveAccommodationRequest,
+    ) -> None:
+        """Move to a new accommodation."""
+        # Parse accommodation_id to extract quality, location, and sqm
+        # Format: quality_location_sqm (e.g., "medium_city_center_70")
+        parts = data.accommodation_id.split("_")
+
+        if len(parts) < 3:
+            raise BadRequestError("Invalid accommodation ID format")
+
+        # Handle location names with underscores (e.g., city_center)
+        if len(parts) == 4:
+            quality_str = parts[0].upper()
+            location_str = f"{parts[1]}_{parts[2]}".upper()
+            sqm = float(parts[3])
+        else:
+            quality_str = parts[0].upper()
+            location_str = parts[1].upper()
+            sqm = float(parts[2])
+
+        # Validate and get enums
+        try:
+            quality = HOUSING_QUALITY[quality_str]
+            location = LOCATION_TYPE[location_str]
+        except KeyError:
+            raise BadRequestError(
+                "Invalid quality or location in accommodation ID")
+
+        # Move to new accommodation
+        player.move_accommodation(
+            accommodation_id=data.accommodation_id,
+            quality=quality,
+            location=location,
+            sqm=sqm,
+        )
 
 
 @post(

@@ -78,3 +78,27 @@ class TextExplanationRequest(Struct):
 
 class ExplanationResponse(Struct):
     explanation: str
+
+
+class SetFoodBudgetRequest(Struct):
+    monthly_food_budget: float
+
+
+class AccommodationOption(Struct):
+    id: str
+    name: str
+    quality: str  # 'LOW', 'MEDIUM', 'HIGH'
+    location: str  # 'SUBURBS', 'CITY_CENTER', 'RURAL'
+    sqm: float
+    monthly_rent: float
+    monthly_utilities: float
+    description: str
+
+
+class ListAccommodationsResponse(Struct):
+    current_accommodation_id: str
+    accommodations: list[AccommodationOption]
+
+
+class MoveAccommodationRequest(Struct):
+    accommodation_id: str

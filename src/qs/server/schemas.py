@@ -45,3 +45,7 @@ class PollResponse(Struct):
     monthly_leisure_expense: float
     monthly_loan_expense: float
     monthly_tax_expense: float
+
+
+class ExplanationResponse(Struct):
+    explanation: str

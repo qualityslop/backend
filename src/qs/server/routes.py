@@ -7,7 +7,11 @@ from litestar import Response
 from authlib.jose import jwt
 
 from qs.contrib.litestar import *
+from qs.events_data import get_event_by_id
+from qs.prompting import build_event_prompt
 from qs.server import get_settings
+from qs.server.exceptions import *
+from qs.server.llm_client import call_llm
 from qs.server.schemas import *
 from qs.server.services import *
 from qs.game.session import Session
@@ -19,6 +23,7 @@ def get_routes() -> list[ControllerRouterHandler]:
     return [
         SessionController,
         GameController,
+        explain_event
     ]
 
 
@@ -230,3 +235,19 @@ class GameController(Controller):
         data: float,
     ) -> None:
         player.set_monthly_leisure_expense(data)
+
+
+@get(
+    operation_id="ExplainEvent",
+    path="/events/{event_id:int}/explanation",
+    tags=["Events"],
+)
+async def explain_event(event_id: int) -> ExplanationResponse:
+    event = get_event_by_id(event_id)
+    if event is None:
+        raise NotFoundError("Event not found")
+
+    prompt = build_event_prompt(event)
+    text = call_llm(prompt)
+
+    return ExplanationResponse(explanation=text)

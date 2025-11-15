@@ -54,6 +54,10 @@ class Session:
         return self._id
     
 
+    def get_players(self) -> list[Player]:
+        return list(self._players.values())
+    
+
     def get_player(self, username: str) -> Player:
         player = self._players.get(username)
 
@@ -62,12 +66,12 @@ class Session:
                 session_id=self._id,
                 username=username,
             )
-        
+
         return player
     
 
     def add_player(
-        self, 
+        self,
         username: str,
         is_leader: bool = False,
     ) -> Player:
@@ -108,6 +112,8 @@ class Session:
 
 
     def start(self) -> None:
+        self._time_progression_multiplier = 1
+
         if self._task is not None:
             return
 
@@ -120,15 +126,19 @@ class Session:
 
         loop = asyncio.get_running_loop()
         self._task = loop.create_task(run())
-    
+
+
+    def pause(self) -> None:
+        self._time_progression_multiplier = 0
+
 
     def get_status(self) -> SessionStatus:
         if self._task is None:
             return SessionStatus.WAITING
-        
+
         if self._task.done():
             return SessionStatus.ENDED
-        
+
         return SessionStatus.RUNNING
 
 

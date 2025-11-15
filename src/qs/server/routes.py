@@ -7,7 +7,11 @@ from litestar import Response
 from authlib.jose import jwt
 
 from qs.contrib.litestar import *
+from qs.events_data import get_event_by_id
+from qs.prompting import build_event_prompt
 from qs.server import get_settings
+from qs.server.exceptions import *
+from qs.server.llm_client import call_llm
 from qs.server.schemas import *
 from qs.server.services import *
 from qs.game.session import Session
@@ -73,6 +77,7 @@ class SessionController(Controller):
     tags = ["Sessions"]
     signature_types = [Session, Player]
 
+
     @post(
         operation_id="SessionCreate",
         path="/create"
@@ -98,6 +103,7 @@ class SessionController(Controller):
         set_token_in_response(response, token)
 
         return response
+
 
     @post(
         operation_id="SessionJoin",
@@ -127,15 +133,13 @@ class SessionController(Controller):
     )
     async def logout(self) -> Response:
         response = Response(None)
-        response.delete_cookie(key="__Session-token")
-        response.delete_cookie(key="token")
+        set_token_in_response(response, "")
         return response
-    
+
 
 class GameController(Controller):
     tags = ["Game"]
     signature_types = [Player]
-
 
     @post(
         operation_id="StartSession",
@@ -143,10 +147,22 @@ class GameController(Controller):
     )
     async def start(
         self,
-        leader: Player,
+        leader: Player
     ) -> None:
         session = leader.get_session()
         session.start()
+
+
+    @post(
+        operation_id="StopSession",
+        path="/stop",
+    )
+    async def stop(
+        self,
+        leader: Player,
+    ) -> None:
+        session = leader.get_session()
+        session.pause()
 
 
     @get(
@@ -170,6 +186,22 @@ class GameController(Controller):
             for symbol in session.get_stock_prices().keys()
         ]
 
+        events = [
+            EventResponse(
+                id=event["id"],
+                date=event["date"],
+                title=event["title"],
+                description=event["description"],
+            ) for event in player.get_events()
+        ]
+
+        players = [
+            PlayerStats(
+                username=player.get_username(),
+                balance=player.get_balance(),
+            ) for player in session.get_players()
+        ]
+
         return PollResponse(
             session_id=session.get_id(),
             session_status=session.get_status(),
@@ -189,6 +221,8 @@ class GameController(Controller):
             social_life_level=player.get_social_life_level(),
             stress_level=player.get_stress_level(),
             living_comfort_level=player.get_living_comfort_level(),
+            career_progress_level=player.get_career_progress_level(),
+            skills_education_level=player.get_skills_education_level(),
             monthly_rent_expense=player.get_monthly_rent_expense(),
             monthly_utilities_expense=player.get_monthly_utilities_expense(),
             monthly_grocery_expense=player.get_monthly_grocery_expense(),
@@ -197,6 +231,8 @@ class GameController(Controller):
             monthly_loan_expense=player.get_monthly_loan_expense(),
             monthly_tax_expense=player.get_monthly_tax_expense(),
             stocks=stocks,
+            events=events,
+            players=players,
         )
 
 
@@ -224,7 +260,7 @@ class GameController(Controller):
     ) -> None:
         player.set_monthly_grocery_expense(data)
 
-    
+
     @post(
         operation_id="SetMonthlyLeisureExpense",
         path="/set-monthly-leisure-expense",
@@ -285,3 +321,18 @@ class GameController(Controller):
         symbol: str,
     ) -> None:
         player.liquidate_stock(symbol)
+
+
+    @get(
+        operation_id="ExplainEvent",
+        path="/events/{event_id:int}/explanation",
+    )
+    async def explain_event(self, event_id: int) -> ExplanationResponse:
+        event = get_event_by_id(event_id)
+        if event is None:
+            raise NotFoundError("Event not found")
+
+        prompt = build_event_prompt(event)
+        text = call_llm(prompt)
+
+        return ExplanationResponse(explanation=text)

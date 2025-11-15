@@ -16,6 +16,18 @@ class SessionJoinRequest(Struct):
     username: str
 
 
+class EventResponse(Struct):
+    id: int
+    date: str
+    title: str
+    description: str
+
+
+class PlayerStats(Struct):
+    username: str
+    balance: float
+
+
 class PollResponse(Struct):
     session_id: str
     session_status: SessionStatus
@@ -36,6 +48,8 @@ class PollResponse(Struct):
     social_life_level: int
     stress_level: int
     living_comfort_level: int
+    career_progress_level: int
+    skills_education_level: int
     monthly_rent_expense: float
     monthly_utilities_expense: float
     monthly_grocery_expense: float
@@ -44,6 +58,8 @@ class PollResponse(Struct):
     monthly_loan_expense: float
     monthly_tax_expense: float
     stocks: list[Position]
+    events: list[EventResponse]
+    players: list[PlayerStats]
 
 
 class Position(Struct):
@@ -52,3 +68,7 @@ class Position(Struct):
     last_price: float
     entry_price: float
     pnl: float
+
+
+class ExplanationResponse(Struct):
+    explanation: str

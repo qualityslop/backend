@@ -200,6 +200,7 @@ class GameController(Controller):
             monthly_leisure_expense=player.get_monthly_leisure_expense(),
             monthly_loan_expense=player.get_monthly_loan_expense(),
             monthly_tax_expense=player.get_monthly_tax_expense(),
+            events=player.get_events()
         )
 
     @post(

@@ -16,6 +16,13 @@ class SessionJoinRequest(Struct):
     username: str
 
 
+class EventResponse(Struct):
+    id: int
+    date: str
+    title: str
+    description: str
+
+
 class PollResponse(Struct):
     session_id: str
     session_status: SessionStatus
@@ -45,6 +52,7 @@ class PollResponse(Struct):
     monthly_leisure_expense: float
     monthly_loan_expense: float
     monthly_tax_expense: float
+    events: list[EventResponse]
 
 
 class ExplanationResponse(Struct):

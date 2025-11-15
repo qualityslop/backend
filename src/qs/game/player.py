@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from enum import StrEnum, Enum
+from qs.events_data import EVENTS_DF
 
 if t.TYPE_CHECKING:
     from qs.game.session import Session
@@ -193,9 +194,13 @@ class Player:
             career_progress=0,
             skills_education=0,
         )
+        self._events = []
 
     def get_session(self) -> Session:
         return self._session
+
+    def get_events(self) -> list[dict]:
+        return self._events
 
     def get_username(self) -> str:
         return self._username
@@ -308,8 +313,30 @@ class Player:
         """Pay the monthly loan installment."""
         self._balance -= self.get_monthly_loan_expense()
 
+    def get_events_for_date(self) -> list[dict]:
+        session_time = self._session.get_time()
+
+        """Retrieve events for a specific date."""
+        events = EVENTS_DF[EVENTS_DF['Date'] ==
+                           f"{session_time.month:02d}-{session_time.day:02d}-{session_time.year:04d}"]
+
+        if not events.empty:
+            self._events = [
+                {
+                    "id": row['ID'],
+                    "date": row['Date'],
+                    "title": row['Event Title'],
+                    "description": row['Description']
+                }
+                for _, row in events.iterrows()
+            ]
+        else:
+            self._events = []
+
     def tick(self) -> None:
         time = self._session.get_time()
+
+        self.get_events_for_date()
 
         if time.day == 1 and time.hour == 0:
             self._balance += self.get_monthly_salary()

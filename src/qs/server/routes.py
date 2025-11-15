@@ -227,6 +227,7 @@ class GameController(Controller):
             monthly_net_income=player.get_monthly_net_income(),
             occupation=player.get_occupation().value,
             monthly_salary=player.get_monthly_salary(),
+            monthly_dividends=player.get_monthly_dividends(),
             health_level=player.get_health_level(),
             happiness_level=player.get_happiness_level(),
             energy_level=player.get_energy_level(),

@@ -42,6 +42,7 @@ class PollResponse(Struct):
     monthly_net_income: float
     occupation: str
     monthly_salary: float
+    monthly_dividends: float
     health_level: int
     happiness_level: int
     energy_level: int

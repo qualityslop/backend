@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import typing as t
 from enum import StrEnum, Enum
-from qs.events_data import EVENTS_DF
+from datetime import timedelta
 
+from qs.events_data import EVENTS_DF
 from qs.exceptions import UnderflowError
 
 if t.TYPE_CHECKING:
@@ -279,7 +280,7 @@ class Player:
 
 
     def get_monthly_income(self) -> float:
-        return self.get_monthly_salary()
+        return self.get_monthly_salary() + self.get_monthly_dividends()
 
 
     def get_monthly_expenses(self) -> float:
@@ -466,6 +467,7 @@ class Player:
         if time.hour == 0:
             self.pay_daily_transportation()
             self.pay_daily_leisure()
+            self.receive_dividends()
 
         if time.hour in (0, 6, 12, 18):
             self._lifestyle.update_health(
@@ -574,3 +576,37 @@ class Player:
         self.credit(revenue)
         self._stocks[symbol] = 0
         self._entry_prices[symbol] = 0.0
+
+
+    def get_monthly_dividends(self) -> float:
+        dividends_data = self._session.get_dividends()
+        current_date = self._session.get_time().date()
+        total_dividends = 0.0
+
+        for symbol, size in self._stocks.items():
+            daily_dividends = dividends_data.get(symbol, {})
+            it = current_date - timedelta(days=29)
+            while it <= current_date:
+                dividend_per_share = daily_dividends.get(it, 0.0)
+                total_dividends += dividend_per_share * size
+                it += timedelta(days=1)
+
+        return total_dividends
+
+
+    def get_dividends(self) -> float:
+        dividends_data = self._session.get_dividends()
+        current_date = self._session.get_time().date()
+        total_dividends = 0.0
+
+        for symbol, size in self._stocks.items():
+            daily_dividends = dividends_data.get(symbol, {})
+            dividend_per_share = daily_dividends.get(current_date, 0.0)
+            total_dividends += dividend_per_share * size
+
+        return total_dividends
+
+
+    def receive_dividends(self) -> None:
+        dividends = self.get_dividends()
+        self.credit(dividends)

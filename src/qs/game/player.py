@@ -16,15 +16,15 @@ class Occupation(StrEnum):
 
 
 class BaseDecays(Enum):
-    HEALTH = -2
-    HAPPINESS = -5
-    SOCIAL_LIFE = -10
-    CAREER = +1
+    HEALTH = -0.5
+    HAPPINESS = -5 / 4
+    SOCIAL_LIFE = -2
+    CAREER = +0.1
 
 
 class FOOD_TYPE(Enum):
     FAST_FOOD = {
-        "health": -5,
+        "health": -1,
         "cost": 100
     }
     HOME_COOKED = {
@@ -32,54 +32,54 @@ class FOOD_TYPE(Enum):
         "cost": 150
     }
     ORGANIC = {
-        "health": +5,
+        "health": +1.5,
         "cost": 250
     }
 
 
 class HOUSING_QUALITY(Enum):
     LOW = {
-        "happiness": -3,
-        "comfort": -1,
+        "happiness": -3/4,
+        "comfort": -1/4,
         "cost": 800
     }
     MEDIUM = {
-        "happiness": +1,
-        "comfort": +15,
+        "happiness": +1/4,
+        "comfort": +15/4,
         "cost": 1500
     }
     HIGH = {
-        "happiness": +5,
-        "comfort": +25,
+        "happiness": +5/4,
+        "comfort": +25/4,
         "cost": 3000
     }
 
 
 class LOCATION_TYPE(Enum):
     SUBURBS = {
-        "comfort": -5,
+        "comfort": -5/4,
         "cost": 1000
     }
     CITY_CENTER = {
-        "comfort": +30,
+        "comfort": +30/4,
         "cost": 2000
     }
     RURAL = {
-        "comfort": -10,
+        "comfort": -10/4,
         "cost": 500
     }
 
 
 class UserLifestyle:
     def __init__(
-        self, 
-        health: float, 
-        happiness: float, 
-        energy: float, 
-        social_life: float, 
+        self,
+        health: float,
+        happiness: float,
+        energy: float,
+        social_life: float,
         stress_level: float,
-        living_comfort: float, 
-        career_progress: float, 
+        living_comfort: float,
+        career_progress: float,
         skills_education: float,
     ):
         self.health = health
@@ -94,39 +94,57 @@ class UserLifestyle:
 
     def update_health(
         self,
-        food_type: FOOD_TYPE, 
-        leisure_spent: float, 
+        food_type: FOOD_TYPE,
+        leisure_spent: float,
         current_month: float,
     ) -> float:
         bonus = food_type.value["health"]
         self.health += bonus + BaseDecays.HEALTH.value + leisure_spent / 50
         if current_month in [11, 12, 1, 2]:  # Winter months
             self.health -= 2  # Additional health decay in winter
+
+        if self.health < 0:
+            self.health = 0
+        elif self.health > 100:
+            self.health = 100
+
         return self.health
 
 
     def update_happiness(
-        self, 
-        leisure_spent: float, 
-        housing_quality: HOUSING_QUALITY, 
-        housing_has_sauna: bool, 
+        self,
+        leisure_spent: float,
+        housing_quality: HOUSING_QUALITY,
+        housing_has_sauna: bool,
         events: list[str],
     ) -> float:
         bonus = housing_quality.value["happiness"]
         sauna_bonus = 2 if housing_has_sauna else 0
-        event_bonus = 10 if 'salary_bonus' in events else -5
+        event_bonus = 10 if 'salary_bonus' in events else 0
         self.happiness += bonus + sauna_bonus + event_bonus + \
-            BaseDecays.HAPPINESS.value + leisure_spent / 30
+            BaseDecays.HAPPINESS.value + leisure_spent / 10
+
+        if self.happiness < 0:
+            self.happiness = 0
+        elif self.happiness > 100:
+            self.happiness = 100
+
         return self.happiness
 
 
     def update_energy(self, work_hours_per_week: int, month: int) -> float:
         health_loss = (100 - self.health) / 2
         work_loss = (work_hours_per_week - 40) * \
-            2 if work_hours_per_week > 40 else -2
+            2 if work_hours_per_week > 40 else 0
         seasonal_bonus = 5 if month in [
             6, 7, 8] else -5 if month in [11, 12, 1, 2] else 0
         self.energy += seasonal_bonus - health_loss - work_loss
+
+        if self.energy < 0:
+            self.energy = 0
+        elif self.energy > 100:
+            self.energy = 100
+
         return self.energy
 
 
@@ -136,9 +154,15 @@ class UserLifestyle:
         work_hours_per_week: int,
     ) -> float:
         work_impact = (work_hours_per_week -
-                       40) / 5 if work_hours_per_week > 40 else 0
+                       40) / 5 if work_hours_per_week > 40 else (40 - work_hours_per_week) / 2
         self.social_life += (leisure_spent / 100) + \
             BaseDecays.SOCIAL_LIFE.value - work_impact
+
+        if self.social_life < 0:
+            self.social_life = 0
+        elif self.social_life > 100:
+            self.social_life = 100
+
         return self.social_life
 
 
@@ -167,37 +191,60 @@ class UserLifestyle:
                              stock_exposure / monthly_expenses)
 
         self.stress_level += stress_change
+
+        if self.stress_level < 0:
+            self.stress_level = 0
+        elif self.stress_level > 100:
+            self.stress_level = 100
+
         return self.stress_level
 
 
     def update_living_comfort(
-        self, 
-        housing_quality: HOUSING_QUALITY, 
-        location_type: LOCATION_TYPE, 
+        self,
+        housing_quality: HOUSING_QUALITY,
+        location_type: LOCATION_TYPE,
         private_living_space_sqm: float,
     ) -> float:
         comfort_bonus = housing_quality.value["comfort"] + \
             location_type.value["comfort"] + private_living_space_sqm
         self.living_comfort = comfort_bonus
+
+        if self.living_comfort < 0:
+            self.living_comfort = 0
+        elif self.living_comfort > 100:
+            self.living_comfort = 100
+
         return self.living_comfort
 
 
     def update_career_progress(
-        self, 
-        is_employed: bool, 
+        self,
+        is_employed: bool,
         leisure_spent: float,
     ) -> float:
         if is_employed:
             self.career_progress += BaseDecays.CAREER.value + \
-                (leisure_spent / 200)
+                (leisure_spent / 2000)
         else:
             self.career_progress -= 2
+
+        if self.career_progress < 0:
+            self.career_progress = 0
+        elif self.career_progress > 100:
+            self.career_progress = 100
 
         return self.career_progress
 
 
     def update_skills_education(self, education_hours_per_week: int) -> float:
-        self.skills_education += education_hours_per_week / 2
+        self.skills_education += education_hours_per_week / 24
+
+        if self.skills_education < 0:
+            self.skills_education = 0
+        elif self.skills_education > 100:
+            self.skills_education = 100
+
         return self.skills_education
 
 
@@ -499,7 +546,7 @@ class Player:
                 events=[]
             )
             self._lifestyle.update_energy(
-                work_hours_per_week=40,
+                work_hours_per_week=32,
                 month=time.month
             )
             self._lifestyle.update_social_life(
@@ -524,17 +571,17 @@ class Player:
                 leisure_spent=self.get_monthly_leisure_expense() / 30
             )
             self._lifestyle.update_skills_education(
-                education_hours_per_week=5
+                education_hours_per_week=2
             )
 
 
     def get_position_size(self, symbol: str) -> int:
         return self._stocks.get(symbol, 0)
-    
+
 
     def get_position_entry_price(self, symbol: str) -> float:
         return self._entry_prices.get(symbol, 0.0)
-    
+
 
     def get_position_pnl(self, symbol: str) -> float:
         entry_price = self.get_position_entry_price(symbol)

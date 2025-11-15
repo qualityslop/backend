@@ -73,5 +73,10 @@ class Position(Struct):
     pnl: float
 
 
+class TextExplanationRequest(Struct):
+    text: str
+    context: str
+
+
 class ExplanationResponse(Struct):
     explanation: str

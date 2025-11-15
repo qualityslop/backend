@@ -24,6 +24,12 @@ __all__ = [
     "NotFoundError",
     "ConflictError",
     "ServiceUnavailableError",
+    "NotImplementedError",
+    "UnauthorizedError",
+    "ForbiddenError",
+    "UpstreamError",
+    "PlayerNotFoundError",
+    "PlayerAlreadyExistsError",
     "dataclass",
     "HTTP_200_OK",
     "HTTP_400_BAD_REQUEST",
@@ -112,12 +118,16 @@ class ServiceUnavailableError(Error, status_code=HTTP_503_SERVICE_UNAVAILABLE):
     """The server is currently unable to handle the request."""
 
 
-class NotImplementError(Error, status_code=HTTP_500_INTERNAL_SERVER_ERROR):
+class NotImplementedError(Error, status_code=HTTP_500_INTERNAL_SERVER_ERROR):
     """The requested operation is not implemented."""
 
 
 class UnauthorizedError(Error, status_code=HTTP_401_UNAUTHORIZED):
     """Client is not authorized to perform this operation.."""
+
+
+class ForbiddenError(Error, status_code=HTTP_403_FORBIDDEN):
+    """Client is forbidden from performing this operation."""
 
 
 @dataclass

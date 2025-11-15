@@ -284,6 +284,7 @@ class Player:
         self._housing_quality = HOUSING_QUALITY.MEDIUM
         self._location_type = LOCATION_TYPE.SUBURBS
         self._private_living_space_sqm = 50
+        self._accommodation_id = "default_medium_suburbs_50"
         self._lifestyle = UserLifestyle(
             health=100,
             happiness=100,
@@ -403,7 +404,8 @@ class Player:
 
 
     def get_monthly_utilities_expense(self) -> float:
-        return 200
+        # Base utilities of 100, plus 2 per sqm
+        return 100 + (self._private_living_space_sqm * 2)
 
 
     def get_monthly_grocery_expense(self) -> float:
@@ -424,6 +426,50 @@ class Player:
 
     def set_monthly_leisure_expense(self, amount: float) -> None:
         self._monthly_leisure_expense = amount
+
+
+    def set_monthly_food_budget(self, amount: float) -> None:
+        """Set the monthly food budget and adjust food type accordingly."""
+        self._monthly_grocery_expense = amount
+
+        # Adjust food type based on budget
+        if amount >= 250:
+            self._food_type = FOOD_TYPE.ORGANIC
+        elif amount >= 150:
+            self._food_type = FOOD_TYPE.HOME_COOKED
+        else:
+            self._food_type = FOOD_TYPE.FAST_FOOD
+
+
+    def get_accommodation_id(self) -> str:
+        """Get the current accommodation ID."""
+        return self._accommodation_id
+
+
+    def get_accommodation_details(self) -> dict:
+        """Get details about current accommodation."""
+        return {
+            "id": self._accommodation_id,
+            "quality": self._housing_quality.name,
+            "location": self._location_type.name,
+            "sqm": self._private_living_space_sqm,
+            "monthly_rent": self.get_monthly_rent_expense(),
+            "monthly_utilities": self.get_monthly_utilities_expense(),
+        }
+
+
+    def move_accommodation(
+        self,
+        accommodation_id: str,
+        quality: HOUSING_QUALITY,
+        location: LOCATION_TYPE,
+        sqm: float,
+    ) -> None:
+        """Move to a new accommodation."""
+        self._accommodation_id = accommodation_id
+        self._housing_quality = quality
+        self._location_type = location
+        self._private_living_space_sqm = sqm
 
 
     def get_monthly_loan_expense(self) -> float:

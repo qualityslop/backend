@@ -165,6 +165,18 @@ class GameController(Controller):
         session.pause()
 
 
+    @post(
+        operation_id="StopSession",
+        path="/stop",
+    )
+    async def stop(
+        self,
+        leader: Player,
+    ) -> None:
+        session = leader.get_session()
+        session.stop()
+
+
     @get(
         operation_id="Poll",
         path="/poll",

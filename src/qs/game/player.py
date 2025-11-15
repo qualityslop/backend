@@ -267,6 +267,15 @@ class Player:
 
     def get_balance(self) -> float:
         return self._balance
+    
+
+    def get_assets(self) -> float:
+        stocks = sum(
+            self._session.get_stock_price(symbol) * size
+            for symbol, size in self._stocks.items()
+        )
+
+        return self._balance + stocks
 
 
     def get_monthly_income(self) -> float:

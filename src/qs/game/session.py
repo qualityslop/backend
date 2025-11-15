@@ -24,11 +24,13 @@ class Session:
         session_id: str,
         period: tuple[datetime, datetime],
         stock_prices: dict[str, dict[date, float]],
+        dividends: dict[str, dict[date, float]],
     ):
         self._id = session_id
         self._players: dict[str, Player] = {}
         self._time, self._end_time = period
         self._stock_prices = stock_prices
+        self._dividends = dividends
         self._time_progression_multiplier = 1
         self._task: asyncio.Task | None = None
 
@@ -38,7 +40,7 @@ class Session:
         start_time = datetime(2008, 1, 1, 12, 0, 0)
         end_time = datetime(2008, 3, 1, 12, 0, 0)
 
-        stock_prices = await get_stock_prices(
+        stock_prices, dividends = await get_stock_prices(
             symbols=("AAPL", "GOOGL", "MSFT", "AMZN"),
             period=(start_time, end_time),
         )
@@ -47,6 +49,7 @@ class Session:
             session_id=session_id,
             period=(start_time, end_time),
             stock_prices=stock_prices,
+            dividends=dividends,
         )
 
 
@@ -130,6 +133,13 @@ class Session:
 
     def pause(self) -> None:
         self._time_progression_multiplier = 0
+
+    
+    def stop(self) -> None:
+        if self._task is None:
+            return
+
+        self._task.cancel()
 
 
     def get_status(self) -> SessionStatus:

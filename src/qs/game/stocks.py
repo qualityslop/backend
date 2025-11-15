@@ -27,7 +27,7 @@ def fetch_stock_prices(
         start=start_day, 
         end=end_day,
         progress=False,
-        auto_adjust=True,
+        auto_adjust=False,
         group_by="ticker",
     )
 
@@ -51,6 +51,7 @@ async def get_stock_prices(
     assert df is not None
 
     out: dict[str, dict[date, float]] = {}
+    div: dict[str, dict[date, float]] = {}
 
     for sym in symbols:
         if sym not in df:
@@ -69,4 +70,9 @@ async def get_stock_prices(
             for idx, row in sub.iterrows()
         }
 
-    return out
+        div[sym] = {
+            idx.date(): float(row["Dividends"])
+            for idx, row in sub.iterrows()
+        }
+
+    return out, div

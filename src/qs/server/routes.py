@@ -154,10 +154,10 @@ class GameController(Controller):
 
 
     @post(
-        operation_id="StopSession",
-        path="/stop",
+        operation_id="PauseSession",
+        path="/pause",
     )
-    async def stop(
+    async def pause(
         self,
         leader: Player,
     ) -> None:

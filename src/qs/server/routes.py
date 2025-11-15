@@ -126,8 +126,7 @@ class SessionController(Controller):
     )
     async def logout(self) -> Response:
         response = Response(None)
-        response.delete_cookie(key="__Session-token")
-        response.delete_cookie(key="token")
+        set_token_in_response(response, "")
         return response
 
 

@@ -14,6 +14,7 @@ def get_dependencies() -> dict[str, Provide]:
     return {
         "session": Provide(provide_session, sync_to_thread=False),
         "player": Provide(provide_player, sync_to_thread=False),
+        "leader": Provide(provide_leader, sync_to_thread=False),
     }
 
 
@@ -33,19 +34,26 @@ def provide_player(request: Request) -> Player:
         key = "token"
     else:
         key = "__Session-token"
-
-    token = request.cookies.get(key)
-
-    if token is None:
-        raise UnauthorizedError()
     
-    payload = jwt.decode(
-        token,
-        settings.api.jwt_secret_key,
-    )
+    try:
+        token = request.cookies[key]
 
-    username = payload["username"]
-    session_id = payload["session_id"]
+        payload = jwt.decode(
+            token,
+            settings.api.jwt_secret_key,
+        )
+
+        username = payload["username"]
+        session_id = payload["session_id"]
+    except Exception:
+        raise UnauthorizedError()
 
     session = get_session(session_id)
     return session.get_player(username)
+
+
+def provide_leader(player: Player) -> Player:
+    if not player.is_leader():
+        raise UnauthorizedError()
+    
+    return player

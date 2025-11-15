@@ -37,8 +37,8 @@ class Session:
 
     @classmethod
     async def create_scenario_2008(cls, session_id: str) -> Session:
-        start_time = datetime(2008, 1, 1, 12, 0, 0)
-        end_time = datetime(2008, 3, 1, 12, 0, 0)
+        start_time = datetime(2005, 1, 1, 12, 0, 0)
+        end_time = datetime(2010, 12, 31, 12, 0, 0)
 
         stock_prices, dividends = await get_stock_prices(
             symbols=("AAPL", "GOOGL", "MSFT", "AMZN"),

@@ -142,9 +142,10 @@ class GameController(Controller):
     async def start(
         self,
         leader: Player,
+        resume: bool = False
     ) -> None:
         session = leader.get_session()
-        session.start()
+        session.start(resume=resume)
 
     @post(
         operation_id="StopSession",

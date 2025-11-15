@@ -120,7 +120,6 @@ class SessionController(Controller):
 
         return response
 
-
     @get(
         operation_id="Logout",
         path="/logout",
@@ -130,12 +129,11 @@ class SessionController(Controller):
         response.delete_cookie(key="__Session-token")
         response.delete_cookie(key="token")
         return response
-    
+
 
 class GameController(Controller):
     tags = ["Game"]
     signature_types = [Player]
-
 
     @post(
         operation_id="StartSession",
@@ -148,6 +146,16 @@ class GameController(Controller):
         session = leader.get_session()
         session.start()
 
+    @post(
+        operation_id="StopSession",
+        path="/stop",
+    )
+    async def stop(
+        self,
+        leader: Player,
+    ) -> None:
+        session = leader.get_session()
+        session.stop()
 
     @get(
         operation_id="Poll",
@@ -187,7 +195,6 @@ class GameController(Controller):
             monthly_tax_expense=player.get_monthly_tax_expense(),
         )
 
-
     @post(
         operation_id="SetTimeProgressionMultiplier",
         path="/set-time-progression-multiplier",
@@ -200,7 +207,6 @@ class GameController(Controller):
         session = leader.get_session()
         session.set_time_progression_multiplier(data)
 
-
     @post(
         operation_id="SetMonthlyGroceryExpense",
         path="/set-monthly-grocery-expense",
@@ -212,7 +218,6 @@ class GameController(Controller):
     ) -> None:
         player.set_monthly_grocery_expense(data)
 
-    
     @post(
         operation_id="SetMonthlyLeisureExpense",
         path="/set-monthly-leisure-expense",

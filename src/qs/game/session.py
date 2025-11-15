@@ -25,10 +25,8 @@ class Session:
         self._time_progression_multiplier = 1
         self._task: asyncio.Task | None = None
 
-
     def get_id(self) -> str:
         return self._id
-    
 
     def get_player(self, username: str) -> Player:
         player = self._players.get(username)
@@ -38,12 +36,11 @@ class Session:
                 session_id=self._id,
                 username=username,
             )
-        
+
         return player
-    
 
     def add_player(
-        self, 
+        self,
         username: str,
         is_leader: bool = False,
     ) -> Player:
@@ -62,19 +59,15 @@ class Session:
         self._players[username] = player
 
         return player
-    
 
     def get_time(self) -> datetime:
         return self._time
-    
 
     def get_time_progression_multiplier(self) -> int:
         return self._time_progression_multiplier
-    
 
     def set_time_progression_multiplier(self, multiplier: int) -> None:
         self._time_progression_multiplier = multiplier
-
 
     def tick(self) -> None:
         self._time += timedelta(hours=1)
@@ -82,15 +75,15 @@ class Session:
         for player in self._players.values():
             player.tick()
 
-
-    def start(self) -> None:
+    def start(self, resume: bool = False) -> None:
         if self._task is not None:
             return
 
         async def run():
-            # Gathering initial 30 days of ticks
-            for _ in range(30 * 24):
-                self.tick()
+            if not resume:
+                #  Gathering initial 30 days of ticks
+                for _ in range(30 * 24):
+                    self.tick()
 
             while True:
                 for _ in range(self._time_progression_multiplier):
@@ -100,13 +93,17 @@ class Session:
 
         loop = asyncio.get_running_loop()
         self._task = loop.create_task(run())
-    
+
+    def stop(self) -> None:
+        if self._task is not None:
+            self._task.cancel()
+            self._task = None
 
     def get_status(self) -> SessionStatus:
         if self._task is None:
             return SessionStatus.WAITING
-        
+
         if self._task.done():
             return SessionStatus.ENDED
-        
+
         return SessionStatus.RUNNING

@@ -268,14 +268,26 @@ class Player:
 
     def get_balance(self) -> float:
         return self._balance
-    
+
 
     def get_assets(self) -> float:
-        stocks = sum(
+        assets = self.get_stock_portfolio_value()
+        
+        if self._balance > 0:
+            assets += self._balance
+
+        return assets
+
+
+    def get_stock_portfolio_value(self) -> float:
+        return sum(
             self._session.get_stock_price(symbol) * size
             for symbol, size in self._stocks.items()
         )
 
+
+    def get_equity(self) -> float:
+        stocks = self.get_stock_portfolio_value()
         return self._balance + stocks
 
 
@@ -454,6 +466,16 @@ class Player:
 
         self.get_events_for_date()
 
+        if time.hour == 0:
+            if self.get_balance() < 0:
+                # on a negative balance, incur daily interest 40% APR
+                interest = -self.get_balance() * (0.4 / 365)
+                self.debit(interest)
+
+            self.pay_daily_transportation()
+            self.pay_daily_leisure()
+            self.receive_dividends()
+
         if time.day == 1 and time.hour == 0:
             self.receive_salary()
             self.pay_rent()
@@ -463,11 +485,6 @@ class Player:
 
         if time.hour in (6, 12, 18):
             self.buy_meal()
-
-        if time.hour == 0:
-            self.pay_daily_transportation()
-            self.pay_daily_leisure()
-            self.receive_dividends()
 
         if time.hour in (0, 6, 12, 18):
             self._lifestyle.update_health(

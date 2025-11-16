@@ -261,7 +261,7 @@ class Player:
         self._session = session
         self._username = username
         self._is_leader = is_leader
-        self._balance = 50000.0
+        self._balance = 15000.0
         self._occupation = Occupation.SOFTWARE_ENGINEER
         self._monthly_grocery_expense = 300.0
         self._monthly_leisure_expense = 250.0
@@ -521,6 +521,9 @@ class Player:
             self.pay_daily_transportation()
             self.pay_daily_leisure()
             self.receive_dividends()
+            # needed to reclassify
+            self.set_monthly_grocery_expense(
+                self._monthly_grocery_expense)
 
         if time.day == 1 and time.hour == 0:
             self.receive_salary()

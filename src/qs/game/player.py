@@ -17,23 +17,23 @@ class Occupation(StrEnum):
 
 
 class BaseDecays(Enum):
-    HEALTH = -0.5
-    HAPPINESS = -5 / 4
-    SOCIAL_LIFE = -2
-    CAREER = +0.1
+    HEALTH = -0.25
+    HAPPINESS = -5 / 8
+    SOCIAL_LIFE = -1
+    CAREER = +0.02
 
 
 class FOOD_TYPE(Enum):
     FAST_FOOD = {
-        "health": -1,
+        "health": -2,
         "cost": 100
     }
     HOME_COOKED = {
-        "health": +1,
+        "health": +.1,
         "cost": 150
     }
     ORGANIC = {
-        "health": +1.5,
+        "health": +1,
         "cost": 250
     }
 
@@ -510,9 +510,6 @@ class Player:
 
         self._multiplier = self._priceMultiplier.multiplier_for_month(
             time.year, time.month)
-
-        print(
-            f"Price multiplier for {time.year}-{time.month:02d}: {self._multiplier:.3f}")
 
         if time.hour == 0:
             if self.get_balance() < 0:

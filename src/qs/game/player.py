@@ -132,11 +132,12 @@ class UserLifestyle:
 
     def update_energy(self, work_hours_per_week: int, month: int) -> float:
         health_loss = (100 - self.health) / 2
+        health_gain = 2 if self.health > 80 else 0
         work_loss = (work_hours_per_week - 40) * \
             2 if work_hours_per_week > 40 else -2
         seasonal_bonus = .1 if month in [
             6, 7, 8] else -.1 if month in [11, 12, 1, 2] else 0
-        self.energy += seasonal_bonus - health_loss - work_loss
+        self.energy += health_gain + seasonal_bonus - health_loss - work_loss
 
         if self.energy < 0:
             self.energy = 0
@@ -152,7 +153,7 @@ class UserLifestyle:
     ) -> float:
         work_impact = (work_hours_per_week -
                        40) / 5 if work_hours_per_week > 40 else -2
-        self.social_life += (leisure_spent / 100) + \
+        self.social_life += (leisure_spent / 100 if leisure_spent > 100 else -1) + \
             BaseDecays.SOCIAL_LIFE.value - work_impact
 
         if self.social_life < 0:
